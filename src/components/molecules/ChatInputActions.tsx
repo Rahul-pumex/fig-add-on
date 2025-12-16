@@ -1,4 +1,4 @@
-import { LuBrain, LuSearchCode, LuFileText, LuFile } from "react-icons/lu";
+import { LuBrain, LuSearchCode, LuFileText, LuFile, LuTable } from "react-icons/lu";
 import { useRef, useState, useEffect } from "react";
 import { useChatMode } from "../ChatModeContext";
 import { inter } from "@/assets/fonts/inter";
@@ -14,9 +14,10 @@ interface ChatInputActionsProps {
     onAttachmentClick?: () => void;
     files: UploadedFile[];
     onFilesChange: (files: UploadedFile[]) => void;
+    onRequestSheetData?: () => void;
 }
 
-const ChatInputActions = ({ disabled, onAttachmentClick, files, onFilesChange }: ChatInputActionsProps) => {
+const ChatInputActions = ({ disabled, onAttachmentClick, files, onFilesChange, onRequestSheetData }: ChatInputActionsProps) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { mode, setMode } = useChatMode();
     const [activeTab, setActiveTab] = useState<ChatMode>(mode);
@@ -146,6 +147,17 @@ const ChatInputActions = ({ disabled, onAttachmentClick, files, onFilesChange }:
                     >
                         <ImageUploadIcon size={16} className="text-gray-600" />
                     </button>
+                    {onRequestSheetData && (
+                        <button
+                            type="button"
+                            onClick={onRequestSheetData}
+                            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded border border-gray-300 bg-white text-green-600 transition-colors hover:border-green-400 hover:text-green-700"
+                            title="Get Google Sheets Data"
+                            disabled={disabled}
+                        >
+                            <LuTable size={16} />
+                        </button>
+                    )}
                     {/* Toggle button placeholder if needed, same height */}
                     {/* <button className="flex items-center justify-center w-8 h-8 ...">Toggle</button> */}
                 </div>

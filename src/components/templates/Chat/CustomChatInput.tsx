@@ -106,6 +106,80 @@ const CustomChatInput = (props: CustomChatInputProps) => {
         };
     }, [adjustTextareaHeight]);
 
+    // Request sheet data from Google Sheets parent window
+    const requestSheetData = useCallback(() => {
+        if (typeof window !== "undefined" && window.parent !== window) {
+            // We're in an iframe, send message to parent
+            window.parent.postMessage({ type: 'REQUEST_SHEET_DATA' }, '*');
+        }
+    }, []);
+
+    // Listen for sheet data from parent window
+    useEffect(() => {
+        if (typeof window === "undefined" || !submitFunction) return;
+
+        const handleSheetData = (event: MessageEvent) => {
+            // Accept messages from any origin when in iframe (you may want to restrict this in production)
+            if (event.data && event.data.type === 'SHEET_DATA' && event.data.source === 'google-sheets') {
+                const payload = event.data.payload;
+                if (payload && payload.success && payload.data) {
+                    // Format the sheet data for the chat
+                    let formattedData = "Google Sheets Data\n";
+                    formattedData += "==================\n\n";
+                    
+                    try {
+                        // Handle different data formats
+                        if (Array.isArray(payload.data)) {
+                            // If data is an array of rows
+                            if (payload.data.length > 0) {
+                                // First row might be headers
+                                const firstRow = payload.data[0];
+                                const isFirstRowArray = Array.isArray(firstRow);
+                                const headers = isFirstRowArray ? firstRow : Object.keys(firstRow || {});
+                                formattedData += "Headers: " + headers.join(", ") + "\n\n";
+                                
+                                // Add data rows (skip first row if it was used as headers)
+                                const dataRows = isFirstRowArray ? payload.data.slice(1) : payload.data.slice(1);
+                                formattedData += "Data:\n";
+                                dataRows.forEach((row: any, index: number) => {
+                                    if (Array.isArray(row)) {
+                                        formattedData += `Row ${index + 1}: ${row.join(", ")}\n`;
+                                    } else if (typeof row === 'object') {
+                                        formattedData += `Row ${index + 1}: ${JSON.stringify(row)}\n`;
+                                    } else {
+                                        formattedData += `Row ${index + 1}: ${row}\n`;
+                                    }
+                                });
+                            } else {
+                                formattedData += "No data available\n";
+                            }
+                        } else if (typeof payload.data === 'object') {
+                            // If data is an object
+                            formattedData += JSON.stringify(payload.data, null, 2);
+                        } else {
+                            // If data is a string or other type
+                            formattedData += String(payload.data);
+                        }
+                    } catch (error) {
+                        console.error('Error formatting sheet data:', error);
+                        formattedData += JSON.stringify(payload.data, null, 2);
+                    }
+
+                    // Send formatted data to chat
+                    if (submitFunction) {
+                        submitFunction(formattedData);
+                    }
+                }
+            }
+        };
+
+        window.addEventListener('message', handleSheetData);
+
+        return () => {
+            window.removeEventListener('message', handleSheetData);
+        };
+    }, [submitFunction]);
+
     useEffect(() => {
         if (submitFunction && typeof window !== "undefined") {
             (window as any).__chatSubmitFunction = submitFunction;
@@ -390,6 +464,7 @@ const CustomChatInput = (props: CustomChatInputProps) => {
                     onAttachmentClick={handleCustomButtonClick}
                     files={uploadedFiles}
                     onFilesChange={setUploadedFiles}
+                    onRequestSheetData={requestSheetData}
                 />
             )}
             <CustomAttachmentUI isOpen={showCustomUI} onClose={() => setShowCustomUI(false)} onSelect={handleCustomUISelect} />
