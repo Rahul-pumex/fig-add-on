@@ -79,18 +79,16 @@ const CustomAssistantMessage = (props: AssistantMessageProps) => {
         // Listen for write response from Google Sheets
         const handleWriteResponse = (event: MessageEvent) => {
             if (event.data && event.data.type === 'WRITE_SHEET_RESPONSE' && event.data.source === 'google-sheets') {
-                console.log('[Google Sheets] Received write response:', event.data.payload);
-                
                 setIsSendingToSheet(false);
                 
                 const payload = event.data.payload;
                 
                 if (payload.success) {
                     // Show success notification
-                    alert(`✓ Successfully wrote ${payload.totalTables || 1} table(s) to Google Sheets!`);
+                    console.log(`✓ Successfully wrote ${payload.totalTables || 1} table(s) to Google Sheets!`);
                 } else {
                     // Show error notification
-                    alert(`✗ Failed to write to Google Sheets: ${payload.message || 'Unknown error'}`);
+                    console.warn(`✗ Failed to write to Google Sheets: ${payload.message || 'Unknown error'}`);
                 }
             }
         };
@@ -181,52 +179,6 @@ const CustomAssistantMessage = (props: AssistantMessageProps) => {
         setChartTab(tab as "sql" | "charts");
     };
     
-    const sanitizeFilename = (value: string) =>
-        (value || "table")
-            .replace(/[<>:"/\\|?*\s]+/g, "-")
-            .replace(/-+/g, "-")
-            .replace(/^-|-$/g, "") || "table";
-
-    const handleExportTables = () => {
-        const container = contentRef.current;
-        if (!container) return;
-
-        const tables = Array.from(container.querySelectorAll("table"));
-        if (!tables.length) return;
-
-        const csvRows: string[] = [];
-
-        tables.forEach((table, tableIndex) => {
-            Array.from(table.rows).forEach((row) => {
-                const cells = Array.from(row.cells).map((cell) => {
-                    const text = cell.innerText.replace(/\s+/g, " ").trim();
-                    const escaped = text.replace(/"/g, '""');
-                    return `"${escaped}"`;
-                });
-                csvRows.push(cells.join(","));
-            });
-
-            // Add blank line between multiple tables
-            if (tableIndex < tables.length - 1) {
-                csvRows.push("");
-            }
-        });
-
-        const csvContent = csvRows.join("\r\n");
-        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        const baseName = sanitizeFilename(threadInfo?.threadId || "table");
-
-        link.href = url;
-        link.download = `${baseName}-export.csv`;
-        link.click();
-
-        setTimeout(() => {
-            window.URL.revokeObjectURL(url);
-        }, 0);
-    };
-
     const handleSendTablesToSheet = () => {
         const container = contentRef.current;
         if (!container) return;
@@ -245,9 +197,6 @@ const CustomAssistantMessage = (props: AssistantMessageProps) => {
             };
         });
 
-        // Log the payload that will be sent to the host (Sheets) before sending
-        console.log("[Sheets] Table payload to send:", tablePayload);
-
         const message = {
             type: "WRITE_SHEET_DATA",
             source: "omniscop-chat",
@@ -262,7 +211,7 @@ const CustomAssistantMessage = (props: AssistantMessageProps) => {
             window.parent.postMessage(message, "*");
             setTimeout(() => setIsSendingToSheet(false), 800);
         } else {
-            console.warn("[Google Sheets] Not running inside an iframe; cannot send sheet data");
+            console.warn("Cannot export: not running inside the expected host/iframe.");
         }
     };
 
@@ -341,21 +290,14 @@ const CustomAssistantMessage = (props: AssistantMessageProps) => {
             </div>
 
             {hasTable && !isLoading && message && (
-                <div className="mt-3 flex justify-end gap-2">
+                <div className="mt-4 flex justify-end">
                     <button
                         type="button"
                         onClick={handleSendTablesToSheet}
                         disabled={isSendingToSheet}
-                        className="rounded bg-[#745263] px-3 py-2 text-xs font-semibold text-white shadow hover:bg-[#5d414f] focus:outline-none focus:ring-2 focus:ring-[#745263] focus:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-70"
+                        className="inline-flex items-center gap-2 rounded-md bg-black px-4 py-2 text-xs font-semibold text-white shadow-lg shadow-emerald-300/40 transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
                     >
-                        {isSendingToSheet ? "Sending…" : "Send table to Sheet"}
-                    </button>
-                    <button
-                        type="button"
-                        onClick={handleExportTables}
-                        className="rounded bg-[#745263] px-3 py-2 text-xs font-semibold text-white shadow hover:bg-[#5d414f] focus:outline-none focus:ring-2 focus:ring-[#745263] focus:ring-offset-1"
-                    >
-                        Export table to Excel
+                        {isSendingToSheet ? "Exporting…" : "Export to Excel"}
                     </button>
                 </div>
             )}
