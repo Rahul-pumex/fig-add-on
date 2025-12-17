@@ -53,11 +53,6 @@ export default function Auth() {
         return (
             <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-white via-[#F5F0F3] to-[#E8DDE3]">
                 <div className="w-full max-w-md p-8 bg-transparent ">
-                    <div className="mb-8 text-center">
-                        <h1 className="text-3xl font-bold bg-gradient-to-r from-[#745263] to-[#9B7080] bg-clip-text text-transparent">
-                            Fig AI
-                        </h1>
-                    </div>
                     {SuperTokens.getRoutingComponent(PreBuiltUIList)}
                 </div>
             </div>
