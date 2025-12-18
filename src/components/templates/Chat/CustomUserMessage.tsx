@@ -22,20 +22,8 @@ const CustomUserMessage: React.FC<UserMessageProps> = (props) => {
     }, [userId, setLastUserMessageId]);
     
     return (
-        <div 
-            className="flex justify-end" 
-            style={{ 
-                padding: '2px',  
-                marginBottom: '2px', 
-            }}
-        >
-            <div 
-                className="w-auto max-w-[85%] min-w-[20%] overflow-x-auto rounded bg-[#745263] wrap-break-word whitespace-pre-line text-xs text-white shadow-sm"
-                style={{
-                    padding: '10px 14px',
-                    lineHeight: '1.5'
-                }}
-            >
+        <div className="flex justify-end py-3 mb-6 pr-6 pl-4">
+            <div className="w-auto max-w-[85%] min-w-[20%] overflow-x-auto rounded bg-[#745263] wrap-break-word whitespace-pre-line text-xs text-white shadow-sm px-3.5 py-2.5 leading-relaxed">
                 {message}
             </div>
         </div>

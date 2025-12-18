@@ -11,6 +11,10 @@ const config = {
         primary: '#745263',
         secondary: '#D9BECC',
       },
+      fontFamily: {
+        sans: ['var(--font-inter)', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+        inter: ['var(--font-inter)', 'Inter', 'sans-serif'],
+      },
     },
   },
   plugins: [],

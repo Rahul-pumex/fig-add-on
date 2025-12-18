@@ -200,8 +200,9 @@ const ChatBoxContent: React.FC<ChatBoxContentProps> = ({ isCollapsed, setIsColla
                         {
                             "--copilot-kit-background-color": "transparent",
                             "--copilot-kit-primary-color": "#745263",
-                            "--copilot-kit-separator-color": "transparent"
-                        } as CopilotKitCSSProperties
+                            "--copilot-kit-separator-color": "transparent",
+                            paddingBottom: "4px" // Ensure space for sticky input at bottom
+                        } as CopilotKitCSSProperties & { paddingBottom: string }
                     }
                     className="copilot-chat-container flex flex-1 flex-col overflow-y-auto border-none"
                 >

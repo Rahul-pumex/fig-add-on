@@ -6,6 +6,7 @@ import { CopilotKit } from "@copilotkit/react-core";
 import { ADMIN_AGENT_NAME } from "../constants";
 import { SafeSuperTokensWrapper } from "../components/auth/SafeSuperTokensWrapper";
 import AuthErrorBoundary from "../components/auth/AuthErrorBoundary";
+import { inter } from "../assets/fonts/inter";
 import "../styles/index.css";
 
 // Initialize SuperTokens
@@ -150,15 +151,17 @@ function MyApp({ Component, pageProps }: AppProps) {
     }, []);
 
     return (
-        <StoreProvider>
-            <AuthErrorBoundary>
-                <SafeSuperTokensWrapper>
-                    <CopilotKit runtimeUrl="/api/copilotkit" agent={ADMIN_AGENT_NAME}>
-                        <Component {...pageProps} />
-                    </CopilotKit>
-                </SafeSuperTokensWrapper>
-            </AuthErrorBoundary>
-        </StoreProvider>
+        <div className={inter.variable}>
+            <StoreProvider>
+                <AuthErrorBoundary>
+                    <SafeSuperTokensWrapper>
+                        <CopilotKit runtimeUrl="/api/copilotkit" agent={ADMIN_AGENT_NAME}>
+                            <Component {...pageProps} />
+                        </CopilotKit>
+                    </SafeSuperTokensWrapper>
+                </AuthErrorBoundary>
+            </StoreProvider>
+        </div>
     );
 }
 

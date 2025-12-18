@@ -145,7 +145,7 @@ function ThreadListView({ onNewThread, onDone }: { onNewThread: () => void; onDo
 
     return (
         <div className="flex h-full w-full flex-col overflow-hidden">
-            <div className="flex-1 overflow-y-auto px-2 py-3 relative">
+            <div className="flex-1 overflow-y-auto px-4 py-4">
                 {thread_list_status === 'LOADING' ? (
                     <div className="flex h-full items-center justify-center">
                         <GridSpinner height={48} width={48} />
@@ -155,7 +155,7 @@ function ThreadListView({ onNewThread, onDone }: { onNewThread: () => void; onDo
                         No threads yet.
                     </div>
                 ) : (
-                    <ul className="space-y-4 px-2">
+                    <ul className="space-y-2">
                         {thread_list.map((item: any) => {
                             const isActive = item.thread_id === threadId;
                             return (
@@ -163,16 +163,22 @@ function ThreadListView({ onNewThread, onDone }: { onNewThread: () => void; onDo
                                     <button
                                         onClick={() => openThread(item.thread_id)}
                                         aria-selected={isActive}
-                                        className={`group flex w-full items-center justify-between rounded-lg border px-3 py-2.5 text-left text-sm shadow-sm transition-colors
-                                            ${isActive ? "bg-gray-100 border-gray-300 text-gray-900" : "bg-white border-gray-200 text-gray-800 hover:bg-gray-50"}`}
+                                        className={`group flex w-full items-center justify-between rounded-lg border px-4 py-3 text-left text-sm shadow-sm transition-all duration-200
+                                            ${isActive 
+                                                ? "bg-gray-100 border-gray-300 text-gray-900" 
+                                                : "bg-white border-gray-200 text-gray-800 hover:bg-gray-50 hover:border-gray-300"
+                                            }`}
                                     >
-                                        <div className="flex min-w-0 items-center gap-3 p-2">
-                                            <ExistingChatIcon className={isActive ? "text-black" : "text-gray-500"} />
-                                            <span className="truncate font-medium leading-5">
+                                        <div className="flex min-w-0 flex-1 items-center gap-3">
+                                            <ExistingChatIcon 
+                                                color={isActive ? '#745263' : '#9ca3af'}
+                                                className="shrink-0"
+                                            />
+                                            <span className="truncate font-medium leading-relaxed text-sm">
                                                 {formatTitle(item.description)}
                                             </span>
                                         </div>
-                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={`h-4 w-4 ${isActive ? "text-gray-700" : "text-gray-400 group-hover:text-gray-500"}`}>
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={`h-4 w-4 shrink-0 ml-2 ${isActive ? "text-gray-700" : "text-gray-400 group-hover:text-gray-500"}`}>
                                             <path fill="currentColor" d="M9 18l6-6-6-6v12z" />
                                         </svg>
                                     </button>
@@ -188,5 +194,5 @@ function ThreadListView({ onNewThread, onDone }: { onNewThread: () => void; onDo
 
 function formatTitle(desc?: string) {
     const text = (desc || "Untitled thread").trim();
-    return text.length > 40 ? `${text.slice(0, 40)}…` : text;
+    return text.length > 60 ? `${text.slice(0, 60)}…` : text;
 }
