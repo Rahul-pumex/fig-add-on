@@ -46,6 +46,39 @@ export const useFetchInterceptor = () => {
 
             const response = await originalFetch(url, modifiedOptions);
 
+            // Handle 401 Unauthorized responses - token expired or invalid
+            if (response.status === 401) {
+                const urlString = typeof url === "string" ? url : url.toString();
+                
+                // Don't redirect on auth endpoints to avoid loops
+                const isAuthEndpoint = urlString.includes("/api/auth/") || 
+                                      urlString.includes("/auth/") ||
+                                      urlString.includes("signin") ||
+                                      urlString.includes("signup");
+                
+                if (!isAuthEndpoint) {
+                    console.warn("[FetchInterceptor] 401 Unauthorized received, clearing tokens and redirecting to login", {
+                        url: urlString,
+                        pathname: typeof window !== "undefined" ? window.location.pathname : "unknown"
+                    });
+                    
+                    // Clear all tokens
+                    AuthService.clearAllTokens();
+                    
+                    // Redirect to login page if not already there
+                    if (typeof window !== "undefined" && !window.location.pathname.includes("/auth")) {
+                        console.log("[FetchInterceptor] Redirecting to /auth due to 401");
+                        // Use setTimeout to avoid interrupting the current response handling
+                        setTimeout(() => {
+                            window.location.href = "/auth";
+                        }, 100);
+                    }
+                }
+                
+                // Return the response so the caller can handle it if needed
+                return response;
+            }
+
             // Check response for new tokens and update if present
             try {
                 const headers = response.headers as Headers;

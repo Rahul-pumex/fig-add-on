@@ -30,7 +30,7 @@ const CustomUserMessage: React.FC<UserMessageProps> = (props) => {
             }}
         >
             <div 
-                className="w-auto max-w-[70%] min-w-[20%] overflow-x-auto rounded bg-[#745263] wrap-break-word whitespace-pre-line text-xs text-white shadow-sm"
+                className="w-auto max-w-[85%] min-w-[20%] overflow-x-auto rounded bg-[#745263] wrap-break-word whitespace-pre-line text-xs text-white shadow-sm"
                 style={{
                     padding: '10px 14px',
                     lineHeight: '1.5'
