@@ -16,8 +16,9 @@ const CustomAssistantMessage = (props: AssistantMessageProps) => {
     const { getUserIdForAssistant, getLastUserMessageId, addMapping } = useMessageMapping();
     const { threadInfo } = useFigAgent();
     const contentRef = useRef<HTMLDivElement | null>(null);
+    const tableIndexRef = useRef(0);
     const [hasTable, setHasTable] = useState(false);
-    const [isSendingToSheet, setIsSendingToSheet] = useState(false);
+    const [exportingTableIndex, setExportingTableIndex] = useState<number | null>(null);
     // Get responsive padding based on chat container width
     const horizontalPadding = useResponsiveChatPadding();
     
@@ -79,13 +80,13 @@ const CustomAssistantMessage = (props: AssistantMessageProps) => {
         // Listen for write response from Google Sheets
         const handleWriteResponse = (event: MessageEvent) => {
             if (event.data && event.data.type === 'WRITE_SHEET_RESPONSE' && event.data.source === 'google-sheets') {
-                setIsSendingToSheet(false);
+                setExportingTableIndex(null);
                 
                 const payload = event.data.payload;
                 
                 if (payload.success) {
                     // Show success notification
-                    console.log(`✓ Successfully wrote ${payload.totalTables || 1} table(s) to Google Sheets!`);
+                    console.log(`✓ Successfully wrote table to Google Sheets!`);
                 } else {
                     // Show error notification
                     console.warn(`✗ Failed to write to Google Sheets: ${payload.message || 'Unknown error'}`);
@@ -179,23 +180,22 @@ const CustomAssistantMessage = (props: AssistantMessageProps) => {
         setChartTab(tab as "sql" | "charts");
     };
     
-    const handleSendTablesToSheet = () => {
+    const handleSendTableToSheet = (tableIndex: number) => {
         const container = contentRef.current;
         if (!container) return;
 
         const tables = Array.from(container.querySelectorAll("table"));
-        if (!tables.length) return;
+        if (!tables[tableIndex]) return;
 
-        const tablePayload = tables.map((table, idx) => {
-            const rows = Array.from(table.rows).map((row) =>
-                Array.from(row.cells).map((cell) => cell.innerText.replace(/\s+/g, " ").trim())
-            );
+        const table = tables[tableIndex];
+        const rows = Array.from(table.rows).map((row) =>
+            Array.from(row.cells).map((cell) => cell.innerText.replace(/\s+/g, " ").trim())
+        );
 
-            return {
-                name: `Table ${idx + 1}`,
-                rows
-            };
-        });
+        const tablePayload = [{
+            name: `Table ${tableIndex + 1}`,
+            rows
+        }];
 
         const message = {
             type: "WRITE_SHEET_DATA",
@@ -207,9 +207,9 @@ const CustomAssistantMessage = (props: AssistantMessageProps) => {
         };
 
         if (typeof window !== "undefined" && window.parent && window.parent !== window) {
-            setIsSendingToSheet(true);
+            setExportingTableIndex(tableIndex);
             window.parent.postMessage(message, "*");
-            setTimeout(() => setIsSendingToSheet(false), 800);
+            setTimeout(() => setExportingTableIndex(null), 800);
         } else {
             console.warn("Cannot export: not running inside the expected host/iframe.");
         }
@@ -223,6 +223,9 @@ const CustomAssistantMessage = (props: AssistantMessageProps) => {
         }
         const containsTable = container.querySelector("table") !== null;
         setHasTable(containsTable);
+        
+        // Reset table index counter when message changes
+        tableIndexRef.current = 0;
     }, [message, isLoading]);
 
     const renderChartContent = () => {
@@ -244,34 +247,67 @@ const CustomAssistantMessage = (props: AssistantMessageProps) => {
     };
 
     return (
-        <div className={`py-6 ${horizontalPadding}`}>
+        <div 
+            style={{ 
+                padding: '2px',
+                marginBottom: '2px'
+            }}
+        >
             <div className="flex items-start">
-                <div className="w-full overflow-x-auto overflow-y-visible wrap-break-word whitespace-pre-line text-black">
+                <div className="w-full wrap-break-word whitespace-pre-line text-black" style={{ overflowY: 'visible' }}>
                     {message && (
                         <div className="prose prose-sm max-w-none" ref={contentRef}>
                             <ReactMarkdown
                                 remarkPlugins={[remarkGfm]}
                                 components={{
-                                    h1: (props) => <h1 className="my-1.5 text-xl font-bold text-black" {...props} />,
-                                    h2: (props) => <h2 className="my-1.5 text-lg font-semibold text-black" {...props} />,
-                                    p: (props) => <p className="text-sm text-black" {...props} />,
-                                    ul: (props) => <ul className="list-disc pl-10 text-black" {...props} />,
-                                    ol: (props) => <ol className="list-decimal pl-10 text-black" {...props} />,
-                                    li: (props) => <li className="text-black" {...props} />,
+                                    h1: (props) => <h1 className="my-1 text-base font-bold text-black" {...props} />,
+                                    h2: (props) => <h2 className="my-1 text-sm font-semibold text-black" {...props} />,
+                                    p: (props) => <p className="text-xs text-black leading-relaxed" {...props} />,
+                                    ul: (props) => <ul className="list-disc pl-6 text-xs text-black" {...props} />,
+                                    ol: (props) => <ol className="list-decimal pl-6 text-xs text-black" {...props} />,
+                                    li: (props) => <li className="text-xs text-black" {...props} />,
                                     code: (props) => (
-                                        <pre className="overflow-x-auto rounded bg-gray-100 p-2">
+                                        <pre className="overflow-x-auto rounded bg-gray-100 p-1.5 text-xs">
                                             <code {...props} />
                                         </pre>
                                     ),
-                                    table: (props) => <table className="my-4 w-full border-collapse text-black" style={{ borderSpacing: 0 }} {...props} />,
+                                    table: (props) => {
+                                        const currentIndex = tableIndexRef.current;
+                                        tableIndexRef.current += 1;
+                                        
+                                        return (
+                                            <div className="my-3" style={{ width: '100%' }}>
+                                                <div style={{ overflowX: 'auto', overflowY: 'visible', width: '100%' }}>
+                                                    <table 
+                                                        className="border-collapse text-xs text-black" 
+                                                        style={{ borderSpacing: 0, minWidth: '100%' }} 
+                                                        {...props} 
+                                                    />
+                                                </div>
+                                                {!isLoading && (
+                                                    <div className="flex justify-end" style={{ marginTop: '8px' }}>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleSendTableToSheet(currentIndex)}
+                                                            disabled={exportingTableIndex === currentIndex}
+                                                            className="inline-flex items-center gap-1.5 rounded-md bg-black text-xs font-semibold text-white transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
+                                                            style={{ padding: '2px 6px' }}
+                                                        >
+                                                            {exportingTableIndex === currentIndex ? "Exporting…" : "Export to Sheet"}
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    },
                                     th: (props) => (
                                         <th
-                                            className="bg-gray-100 px-3 py-2 text-left text-sm font-semibold text-black"
+                                            className="bg-gray-100 px-2 py-1.5 text-left text-xs font-semibold text-black"
                                             style={{ border: "1px solid #e4e4e4" }}
                                             {...props}
                                         />
                                     ),
-                                    td: (props) => <td className="px-3 py-2 text-sm text-black" style={{ border: "1px solid #e4e4e4" }} {...props} />,
+                                    td: (props) => <td className="px-2 py-1.5 text-xs text-black" style={{ border: "1px solid #e4e4e4" }} {...props} />,
                                     tr: (props) => <tr className="hover:bg-white" {...props} />,
                                     tbody: (props) => <tbody {...props} />
                                 }}
@@ -282,31 +318,19 @@ const CustomAssistantMessage = (props: AssistantMessageProps) => {
                     )}
 
                     {isLoading && (
-                        <div className="mt-2 flex items-center gap-2 text-gray-500 py-2 px-1 overflow-visible">
+                        <div className="mt-1.5 flex items-center gap-2 text-gray-500 py-1.5 px-1" style={{ overflow: 'hidden' }}>
                             <BallLoader />
                         </div>
                     )}
                 </div>
             </div>
 
-            {hasTable && !isLoading && message && (
-                <div className="mt-4 flex justify-end">
-                    <button
-                        type="button"
-                        onClick={handleSendTablesToSheet}
-                        disabled={isSendingToSheet}
-                        className="inline-flex items-center gap-2 rounded-md bg-black px-4 py-2 text-xs font-semibold text-white shadow-lg shadow-emerald-300/40 transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
-                    >
-                        {isSendingToSheet ? "Exporting…" : "Export to Excel"}
-                    </button>
-                </div>
-            )}
 
-            {subComponent && <div className="my-2">{subComponent}</div>}
+            {subComponent && <div className="my-1.5">{subComponent}</div>}
             
             {(derivedState.hasCharts || derivedState.hasTexts) && !isLoading && message && (
-                <div className="mt-6 w-full">
-                    <div className="relative mb-4 flex w-full items-center justify-between">
+                <div className="mt-4 w-full">
+                    <div className="relative mb-3 flex w-full items-center justify-between">
                         {derivedState.hasCharts && (
                             <Tabs data={tabData} activeTab={chartTab} setActiveTab={handleTabChange} />
                         )}

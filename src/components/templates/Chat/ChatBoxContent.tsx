@@ -210,7 +210,7 @@ const ChatBoxContent: React.FC<ChatBoxContentProps> = ({ isCollapsed, setIsColla
                     <MessageMappingProvider>
                         <CopilotChat
                             labels={{
-                                initial: isNewThread ? "Hello! How can I help you today?" : "",
+                                initial: isNewThread ? "Hello! What can I do for you?" : "",
                                 title: "FIG Agent",
                                 placeholder: "Ask me anything!",
                                 stopGenerating: "Stop",

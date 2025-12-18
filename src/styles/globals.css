@@ -57,21 +57,21 @@ body {
 
 /* Scrollbar styling */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: #f1f1f1;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(116, 82, 99, 0.3);
-  border-radius: 3px;
+  background: #888;
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(116, 82, 99, 0.5);
+  background: #555;
 }
 
 /* CopilotKit overrides for sidebar style */
@@ -81,17 +81,9 @@ body {
   height: 100% !important;
   border: none !important;
   box-shadow: none !important;
-  background: transparent !important;
 }
 
 .copilotKitMessages {
   padding: 0 !important;
-  border: none !important;
 }
-
-/* Remove any unwanted borders */
-.copilot-chat-container * {
-  border-right: none !important;
-}
-
 
