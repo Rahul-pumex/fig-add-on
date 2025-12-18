@@ -17,6 +17,7 @@ const CustomAssistantMessage = (props: AssistantMessageProps) => {
     const { threadInfo } = useFigAgent();
     const contentRef = useRef<HTMLDivElement | null>(null);
     const tableIndexRef = useRef(0);
+    const exportTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const [hasTable, setHasTable] = useState(false);
     const [exportingTableIndex, setExportingTableIndex] = useState<number | null>(null);
     // Get responsive padding based on chat container width
@@ -80,6 +81,12 @@ const CustomAssistantMessage = (props: AssistantMessageProps) => {
         // Listen for write response from Google Sheets
         const handleWriteResponse = (event: MessageEvent) => {
             if (event.data && event.data.type === 'WRITE_SHEET_RESPONSE' && event.data.source === 'google-sheets') {
+                // Clear any pending timeout
+                if (exportTimeoutRef.current) {
+                    clearTimeout(exportTimeoutRef.current);
+                    exportTimeoutRef.current = null;
+                }
+                
                 setExportingTableIndex(null);
                 
                 const payload = event.data.payload;
@@ -98,6 +105,10 @@ const CustomAssistantMessage = (props: AssistantMessageProps) => {
     
         return () => {
             window.removeEventListener('message', handleWriteResponse);
+            // Clean up timeout on unmount
+            if (exportTimeoutRef.current) {
+                clearTimeout(exportTimeoutRef.current);
+            }
         };
     }, []);
 
@@ -181,11 +192,20 @@ const CustomAssistantMessage = (props: AssistantMessageProps) => {
     };
     
     const handleSendTableToSheet = (tableIndex: number) => {
+        // Prevent multiple simultaneous exports
+        if (exportingTableIndex !== null) {
+            console.warn("Export already in progress, please wait...");
+            return;
+        }
+
         const container = contentRef.current;
         if (!container) return;
 
         const tables = Array.from(container.querySelectorAll("table"));
-        if (!tables[tableIndex]) return;
+        if (!tables[tableIndex]) {
+            console.warn(`Table at index ${tableIndex} not found`);
+            return;
+        }
 
         const table = tables[tableIndex];
         const rows = Array.from(table.rows).map((row) =>
@@ -207,9 +227,20 @@ const CustomAssistantMessage = (props: AssistantMessageProps) => {
         };
 
         if (typeof window !== "undefined" && window.parent && window.parent !== window) {
+            // Clear any existing timeout
+            if (exportTimeoutRef.current) {
+                clearTimeout(exportTimeoutRef.current);
+            }
+            
             setExportingTableIndex(tableIndex);
             window.parent.postMessage(message, "*");
-            setTimeout(() => setExportingTableIndex(null), 800);
+            
+            // Fallback timeout in case response doesn't come back (increase to 5 seconds)
+            exportTimeoutRef.current = setTimeout(() => {
+                console.warn("Export timeout - resetting state");
+                setExportingTableIndex(null);
+                exportTimeoutRef.current = null;
+            }, 5000);
         } else {
             console.warn("Cannot export: not running inside the expected host/iframe.");
         }
