@@ -191,31 +191,58 @@ const CustomAssistantMessage = (props: AssistantMessageProps) => {
         setChartTab(tab as "sql" | "charts");
     };
     
-    const handleSendTableToSheet = (tableIndex: number) => {
+    const handleSendTableToSheet = (event: React.MouseEvent<HTMLButtonElement>) => {
+        // Find the table by traversing from the button
+        const button = event.currentTarget;
+        // Find the parent wrapper div that contains both table and button
+        const tableWrapper = button.closest('div.my-3') as HTMLElement;
+        if (!tableWrapper) {
+            console.warn("Table wrapper not found");
+            return;
+        }
+        
+        const table = tableWrapper.querySelector('table') as HTMLTableElement;
+        if (!table) {
+            console.warn("Table not found in wrapper");
+            return;
+        }
+
+        // Find the actual index of this table in the DOM
+        const container = contentRef.current;
+        if (!container) return;
+
+        const allTables = Array.from(container.querySelectorAll("table"));
+        const actualIndex = allTables.indexOf(table);
+        
+        if (actualIndex === -1) {
+            console.warn("Could not determine table index");
+            return;
+        }
+
         // Prevent multiple simultaneous exports
         if (exportingTableIndex !== null) {
             console.warn("Export already in progress, please wait...");
             return;
         }
 
-        const container = contentRef.current;
-        if (!container) return;
-
-        const tables = Array.from(container.querySelectorAll("table"));
-        if (!tables[tableIndex]) {
-            console.warn(`Table at index ${tableIndex} not found`);
-            return;
-        }
-
-        const table = tables[tableIndex];
         const rows = Array.from(table.rows).map((row) =>
             Array.from(row.cells).map((cell) => cell.innerText.replace(/\s+/g, " ").trim())
         );
 
         const tablePayload = [{
-            name: `Table ${tableIndex + 1}`,
+            name: `Table ${actualIndex + 1}`,
             rows
         }];
+
+        // Console log the extracted data before sending to Excel
+        console.log("📊 Extracting table data for Excel export:", {
+            tableIndex: actualIndex + 1,
+            tableName: `Table ${actualIndex + 1}`,
+            rowCount: rows.length,
+            columnCount: rows[0]?.length || 0,
+            data: rows,
+            tablePayload: tablePayload
+        });
 
         const message = {
             type: "WRITE_SHEET_DATA",
@@ -232,7 +259,7 @@ const CustomAssistantMessage = (props: AssistantMessageProps) => {
                 clearTimeout(exportTimeoutRef.current);
             }
             
-            setExportingTableIndex(tableIndex);
+            setExportingTableIndex(actualIndex);
             window.parent.postMessage(message, "*");
             
             // Fallback timeout in case response doesn't come back (increase to 5 seconds)
@@ -319,7 +346,7 @@ const CustomAssistantMessage = (props: AssistantMessageProps) => {
                                                     <div className="flex justify-end" style={{ marginTop: '8px' }}>
                                                         <button
                                                             type="button"
-                                                            onClick={() => handleSendTableToSheet(currentIndex)}
+                                                            onClick={handleSendTableToSheet}
                                                             disabled={exportingTableIndex === currentIndex}
                                                             className="inline-flex items-center gap-1.5 rounded-md bg-black text-xs font-semibold text-white transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
                                                             style={{ padding: '2px 6px' }}
