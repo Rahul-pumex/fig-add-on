@@ -1,5 +1,6 @@
 import type { AppProps } from "next/app";
 import { useEffect } from "react";
+import { useRouter } from "next/router";
 import { initAuth, AuthService, useFetchInterceptor } from "@utils";
 import StoreProvider from "../redux/StoreProvider";
 import { CopilotKit } from "@copilotkit/react-core";
@@ -13,8 +14,39 @@ import "../styles/index.css";
 initAuth();
 
 function MyApp({ Component, pageProps }: AppProps) {
+    const router = useRouter();
+    
     // CRITICAL: Install fetch interceptor to add auth headers to all API requests
     useFetchInterceptor();
+    
+    // Handle back button visibility based on current route
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            // Check if we're in an iframe
+           // const isInIframe = window.self !== window.top;
+            const isInIframe = true;
+            
+            if (isInIframe) {
+                // Show back button only on /auth routes (signup/login pages)
+                const isAuthPage = router.pathname === '/auth' || router.pathname.startsWith('/auth/');
+                
+                if (isAuthPage) {
+                    console.log('[App] Showing back button for auth page:', router.pathname);
+                    window.parent.postMessage({
+                        type: 'SHOW_BACK_BUTTON',
+                        source: 'fig-agent'
+                    }, '*');
+                } else {
+                    console.log('[App] Hiding back button for page:', router.pathname);
+                    window.parent.postMessage({
+                        type: 'HIDE_BACK_BUTTON',
+                        source: 'fig-agent'
+                    }, '*');
+                }
+            }
+        }
+    }, [router.pathname, router.asPath]);
+    
     useEffect(() => {
         if (typeof window !== "undefined") {
             // Enhanced global error handling for session errors
@@ -166,5 +198,3 @@ function MyApp({ Component, pageProps }: AppProps) {
 }
 
 export default MyApp;
-
-

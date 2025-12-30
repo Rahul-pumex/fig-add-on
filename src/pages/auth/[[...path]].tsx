@@ -49,30 +49,6 @@ export default function Auth() {
         checkAuthAndLoad();
     }, [router]);
 
-    // Notify parent (Google Sheets sidebar) to show back button
-    useEffect(() => {
-        if (loaded) {
-            // Check if we're in an iframe
-            const isInIframe = window.self !== window.top;
-            
-            if (isInIframe) {
-                // Show back button when auth page loads
-                window.parent.postMessage({
-                    type: 'SHOW_BACK_BUTTON',
-                    source: 'fig-agent'
-                }, '*');
-                
-                // Hide back button when component unmounts
-                return () => {
-                    window.parent.postMessage({
-                        type: 'HIDE_BACK_BUTTON',
-                        source: 'fig-agent'
-                    }, '*');
-                };
-            }
-        }
-    }, [loaded]);
-
     if (loaded) {
         return (
             <div className="flex items-center justify-center min-h-screen w-full bg-gradient-to-b from-white via-[#F5F0F3] to-[#E8DDE3]" style={{ padding: '20px' }}>
