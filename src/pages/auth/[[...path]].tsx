@@ -53,8 +53,7 @@ export default function Auth() {
     useEffect(() => {
         if (loaded) {
             // Check if we're in an iframe
-            // const isInIframe = window.self !== window.top;
-            const isInIframe = true;
+            const isInIframe = window.self !== window.top;
             
             if (isInIframe) {
                 // Show back button when auth page loads
